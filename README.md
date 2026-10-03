@@ -127,18 +127,33 @@ node demo/rite-example.mjs      # the retirement rite, worked live (writes demo/
 node lib/control-ladder.mjs     # the negative control's rung must stay flat (exit 1 if it moves)
 node demo/llm-loop.mjs          # live 3-call LLM loop (keys never printed)
 node demo/embed.mjs             # rebuild the demo page from receipts
-node --test tests/              # 35/35 (run per-file: node --test tests/<f>.mjs)
+npm test                        # 38/38 (vendor + rite + control + bones + loop + purpose)
 ```
 
 ## Tests & CI
 
-`npm test` (35 tests) plus the standing control check
+`npm test` (38 tests) plus the standing control check
 `node lib/control-ladder.mjs demo/summary.json`: the negative control's rung
 must stay FLAT (99 → 99 → 99 ops) — if the control arm moves, bones leaked
 into it or the world drifted, and the tool exits 1 naming the iteration and
 the delta; otherwise it prints the ladder (control ops vs bones-enabled ops
 and the saved delta per iteration: 0, 32, 61). `.github/workflows/ci.yml`
 runs both on node 20/24.
+
+## The Band Law (WP-12, vendored)
+
+The purpose gate is one instantiation of a mechanism the fleet derived three
+times (see `SuperInstance/quilt-whitepapers` WP-12): `decide(x, region) ->
+REST | ESCALATE`. Here `x` is the predicted marginal purpose-per-op and the
+region is the value floor `[0, deadband)` — rest (pause, zero ops) while
+nothing worth thought is predicted; spend the moment value appears
+(`marginal === deadband` already spends). The canonical module lives in
+`madlibs-jev/band-law.mjs`; `vendor/band-law.mjs` is a byte-identical copy
+with the sha256 pinned in `tests/vendor.test.mjs`, and that test proves the
+comparator reproduces EVERY receipted gate decision in both demo ledgers
+(main: 3 goes + 1 pause; control: 3 goes). The flat control rung and the
+band are complementary views: the band sees marginal value, the ladder sees
+the cost curve. Vendor drift fails CI.
 
 ## Honest limits
 
