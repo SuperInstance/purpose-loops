@@ -3,6 +3,8 @@
 //   iterate(task):
 //     1. GATE     — the purpose ledger plans the iteration (pause = zero spend)
 //     2. RESHAPE  — the environment is rebuilt with the registry's bones injected
+//                   (first the RETIREMENT RITE sweeps: bones that stopped paying
+//                   rent for the whole rite window are retired, never injected)
 //     3. ATTEMPT  — a pluggable strategy works the task, on an honest op counter
 //     4. MEASURE  — payoff measured against the task requirements (no self-grading)
 //     5. COMPILE  — deterministic extractors mint BONES from what worked
@@ -28,6 +30,10 @@ export class Loop {
     extractors = [],       // [{name, fn: (trace, task) => {kind, shape, body, replay} | null}]
     strategyName = 'v1',
     bonesEnabled = true,   // false = negative control (inject nothing, ever)
+    remeasure = null,      // (bone, env, task, counter) => {withoutOps, withOps, note, withoutByLabel?, withByLabel?} | null
+                           // opt-in per loop: a measured use appends to the bone's reuse ledger
+                           // (the retirement rite's window). null = unmeasured use: the window is
+                           // NOT advanced — a bone that is never re-measured is never retired.
     receiptPath = null,
     clock = () => new Date().toISOString(),
   }) {
@@ -40,6 +46,7 @@ export class Loop {
     this.extractors = extractors;
     this.strategyName = strategyName;
     this.bonesEnabled = bonesEnabled;
+    this.remeasure = remeasure;
     this.clock = clock;
     this.iteration = 0;
     this.opsSpent = 0;
@@ -74,7 +81,20 @@ export class Loop {
     this.log.append('iteration.begin', { iteration: i, task, predictedMarginal: plan.marginal, why: plan.why });
 
     // ── 2. RESHAPE: the world the attempt starts in already contains the bones ──
+    // First the RETIREMENT RITE (WP-07: a registry without a rite becomes a junk
+    // drawer): bones whose last riteWindow measured uses all show opsWith >=
+    // opsWithout are retired BEFORE the injection set is computed. The rite is
+    // silent when it retires nothing; when it acts, the action is receipted.
     const env = new Env({ registry: this._registry, enabled: this.bonesEnabled });
+    if (this.bonesEnabled && this._registry && typeof this._registry.retireSweep === 'function') {
+      const sweep = this._registry.retireSweep();
+      if (sweep.retired.length > 0) {
+        this.log.append('bone.sweep', { iteration: i, swept: sweep.swept, retired: sweep.retired });
+        for (const r of sweep.retired) {
+          this.log.append('bone.retired', { iteration: i, boneId: r.id, at: r.at, reason: r.reason, window: r.window });
+        }
+      }
+    }
     const available = this.bonesEnabled && this._registry ? this._registry.forShape(this.taskShape).map(b => b.id) : [];
     this.log.append('reshape', { iteration: i, injected: available, worldSize: available.length, bonesEnabled: this.bonesEnabled });
 
@@ -87,6 +107,23 @@ export class Loop {
       iteration: i, strategy: this.strategyName, ops: counter.total,
       opsByLabel: counter.breakdown(), artifact, trace,
     });
+
+    // ── 3b. REMEASURE (opt-in): fetched bones can append a measured use to their
+    // reuse ledger — the honest hook that feeds the retirement rite. Only
+    // MEASURED uses advance the rite window; a null return means the strategy
+    // fetched the bone but the caller cannot honestly price this use.
+    const measuredUses = [];
+    if (this.bonesEnabled && this.remeasure && this._registry) {
+      for (const id of env.fetched()) {
+        const bone = this._registry.get(id);
+        if (!bone || bone.retired) continue;
+        const m = this.remeasure(bone, env, task, counter);
+        if (!m) continue; // unmeasured use: window not advanced
+        const entry = this._registry.recordUse(bone.id, m);
+        measuredUses.push({ boneId: bone.id, seq: entry.seq, withoutOps: entry.withoutOps, withOps: entry.withOps, savedDelta: entry.savedDelta, note: entry.note });
+        this.log.append('bone.use', { iteration: i, boneId: bone.id, seq: entry.seq, withoutOps: entry.withoutOps, withOps: entry.withOps, savedDelta: entry.savedDelta, note: entry.note, costSaved: bone.costSaved });
+      }
+    }
 
     // ── 4. MEASURE: honest payoff, against the task, not against hope ──
     const payoff = this.measure(artifact, task);
@@ -122,7 +159,7 @@ export class Loop {
     if (this.purpose.met()) {
       this.log.append('purpose.stopmet', { iteration: i, state: this.purpose.state });
     }
-    return { iteration: i, paused: false, ops: counter.total, opsByLabel: counter.breakdown(), artifact, payoff, minted, reused, injected: available, cite };
+    return { iteration: i, paused: false, ops: counter.total, opsByLabel: counter.breakdown(), artifact, payoff, minted, reused, injected: available, measuredUses, cite };
   }
 
   _cite(task, artifact, ops, injected) {
