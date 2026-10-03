@@ -29,13 +29,48 @@ purpose (standing sentence + measurable stop-condition)
 ```
 
 - **Bone registry** (`core/bones.mjs`): every bone carries provenance (the
-  receipts that minted it), a reuse count, and an honest `costSaved` measured
-  as ops-without vs ops-with.
+  receipts that minted it), a reuse count, a reuse ledger, and an honest
+  `costSaved` measured as ops-without vs ops-with — and a **retirement rite**
+  that sweeps out bones which stopped paying rent.
 - **Purpose ledger** (`core/purpose.mjs`): every iteration cites how it served
   the purpose; the loop PAUSES itself when marginal purpose-per-token falls
   below a deadband — the inverse of the exocortex surprise-interrupt: no
   surprise, no spend.
 - **Receipts** (`core/receipts.mjs`): append-only JSONL, sha-chained tips.
+
+## The retirement rite (WP-07)
+
+> "a bone registry without a retirement rite becomes a junk drawer" — WP-07
+
+costSaved makes the rite mechanical. Every measured use of a bone appends to
+its reuse ledger (the mint-time counterfactual is the first entry when
+present) and refreshes `costSaved` as the rolling window over the last
+**N = `riteWindow`** entries (default 3). The sweep — run by the loop at every
+RESHAPE — retires any bone whose **every one of its last N measured uses shows
+opsWith ≥ opsWithout**: the bone stopped paying rent N times in a row. One
+good entry in the window protects the bone (hysteresis); exactly N−1 bad
+entries retire nothing (that off-by-one is a pinned test). Retirement is not
+deletion: retired bones stay in the registry (`stats().retiredCount`) but are
+excluded from `forShape`/`byKind`, so reshape never injects them and
+`Env.bone` refuses them; only an explicit `registry.revive(id, {reason})`
+un-retires (the snapshot is kept in `bone.revivals` and the ledger is not
+cleared — a revived bone must pay rent again or the next sweep re-retires it).
+When the rite acts, the trail is receipted: `bone.use` → `bone.sweep` →
+`bone.retired` → the next reshape without the bone (`node
+demo/rite-example.mjs` runs it live; the cost curve falls when the retired
+bone leaves the world). Honest limit: re-measurement is opt-in per loop (the
+`remeasure` hook) — unmeasured uses do not advance the window, so a bone that
+is never re-measured is never retired. Stated, not hidden.
+
+**Bridge 4 lite — the cross-shape bone library** (`core/library.mjs`): one
+shared registry any loop can attach to, plus `ask({kind, shape?, predicate?})`
+— "which existing bones fit this fixture?" across ALL shapes, candidates
+returned with measured `costSaved` attached, never injected (injection stays
+the Env/reshape decision, which stays shape-scoped) — plus JSONL
+export/import that round-trips the full bone (provenance, costSaved, reuse
+ledger, retired status) canon-identically and fail-closed on tamper. Purposes
+share a bone economy; a bone retired in one shape is invisible to `ask()`
+unless `includeRetired: true`.
 
 ## The receipted result (offline, deterministic)
 
@@ -71,9 +106,14 @@ the erised exocortex runs on.
 
 - `strategies/flashcards.mjs` — the capsule strategy with pluggable attempt +
   deterministic bone extractors.
-- `core/` — loop, bones, purpose, receipts (ESM, zero deps).
-- `tests/` — 22 tests: append-only receipts, bone-injection determinism, the
-  cost-decreasing property, the negative control, purpose-deadband pause.
+- `core/` — loop, bones (with the retirement rite), library (Bridge 4 lite),
+  purpose, receipts (ESM, zero deps).
+- `tests/` — 35 tests: append-only receipts, bone-injection determinism, the
+  cost-decreasing property, the negative control, purpose-deadband pause, the
+  retirement rite (window rule, off-by-one, exclusion, revive), the cross-shape
+  library, and the self-verifying flat control rung.
+- `lib/control-ladder.mjs` — the control-rung check as a CLI + reusable
+  `assertFlatControl(series)` for other repos.
 - `demo/index.html` — self-contained loop visualizer (no network): purpose
   banner, falling cost bars, the bone registry growing, the ghosted control
   loop beside it for contrast, receipts strip. 45 receipts embedded.
@@ -83,10 +123,22 @@ the erised exocortex runs on.
 
 ```bash
 node lib/run-experiment.mjs     # offline worked example (writes demo/summary.json)
+node demo/rite-example.mjs      # the retirement rite, worked live (writes demo/receipts/rite.jsonl)
+node lib/control-ladder.mjs     # the negative control's rung must stay flat (exit 1 if it moves)
 node demo/llm-loop.mjs          # live 3-call LLM loop (keys never printed)
 node demo/embed.mjs             # rebuild the demo page from receipts
-node --test tests/              # 22/22 (run per-file: node --test tests/<f>.mjs)
+node --test tests/              # 35/35 (run per-file: node --test tests/<f>.mjs)
 ```
+
+## Tests & CI
+
+`npm test` (35 tests) plus the standing control check
+`node lib/control-ladder.mjs demo/summary.json`: the negative control's rung
+must stay FLAT (99 → 99 → 99 ops) — if the control arm moves, bones leaked
+into it or the world drifted, and the tool exits 1 naming the iteration and
+the delta; otherwise it prints the ladder (control ops vs bones-enabled ops
+and the saved delta per iteration: 0, 32, 61). `.github/workflows/ci.yml`
+runs both on node 20/24.
 
 ## Honest limits
 
@@ -98,3 +150,8 @@ node --test tests/              # 22/22 (run per-file: node --test tests/<f>.mjs
   jig-building cost, and every later task of that shape rides it.
 - The purpose deadband pauses on low marginal purpose; it does not yet
   re-direct to a different purpose (no portfolio of purposes).
+- The retirement rite only sees MEASURED uses: `remeasure` is opt-in per loop,
+  and unmeasured uses do not advance the window — a bone that is never
+  re-measured is never retired. The library's `ask()` reads the economy;
+  whether a cross-shape candidate actually fits is still the borrowing
+  strategy's to prove.
