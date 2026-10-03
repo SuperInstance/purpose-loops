@@ -149,7 +149,7 @@ export class Loop {
       }
       this._capsulesCompiled += 1;
     }
-    this.log.append('compile.record', { iteration: i, minted, reused, payoffValid: payoff.valid, note: this.bonesEnabled ? 'bones loadable into the next reshape' : 'control: bones minted but NEVER injected (no channel to pay off)' });
+    this.log.append('compile.record', { iteration: i, minted, reused, payoffValid: payoff.valid, measuredUses, note: this.bonesEnabled ? 'bones loadable into the next reshape' : 'control: bones minted but NEVER injected (no channel to pay off)' });
 
     // ── 6. CITE: how this iteration served the standing purpose ──
     const coverage = this.purpose.unitsFor(task, this.purpose.state) >= 1 ? 1 : 0;

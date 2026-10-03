@@ -25,9 +25,13 @@
 //         with its full ledger.
 //
 // Run: node demo/rite-example.mjs
+// (also exported: runRiteDemo({ receiptPath, clock }) — the receipt-of-record
+// pin test regenerates the demo on a temp path with a fixed clock and asserts
+// byte-identity, so the committed rite.jsonl provably regenerates from the
+// committed tree.)
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Loop } from '../core/loop.mjs';
 import { Purpose } from '../core/purpose.mjs';
 import { BoneRegistry, OpCounter } from '../core/bones.mjs';
@@ -36,7 +40,6 @@ import { ensureFreshFile } from '../lib/run-experiment.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const ritePath = path.join(here, 'receipts', 'rite.jsonl');
-ensureFreshFile(ritePath);
 
 // ── the demo world: 4 topics × 3 notes, one per template category ──
 export const TASK_SHAPE = 'note-capsule';
@@ -191,57 +194,64 @@ const remeasure = (bone) => {
   };
 };
 
-// ── the loop ──
-const registry = new BoneRegistry({ loopId: 'rite', riteWindow: 3 });
-const purpose = new Purpose({
-  sentence: 'Demonstrate the rite: keep producing capsules while the registry polices its own bones.',
-  stop: () => false, unitsFor: () => 1, deadband: 0, loopId: 'rite',
-});
-const loop = new Loop({
-  loopId: 'rite', purpose, taskShape: TASK_SHAPE, budget: 400,
-  strategy: noteStrategy, strategyName: 'notes.v1', measure: measureCapsule,
-  extractors, bonesEnabled: true, remeasure, receiptPath: ritePath,
-}).attachRegistry(registry);
+// ── the loop driver ──
+export function runRiteDemo({ receiptPath = ritePath, clock } = {}) {
+  ensureFreshFile(receiptPath); // fresh receipt file per run (moved here from module scope so IMPORTING this module never touches the receipt of record)
+  world.notesCarryTemplate = false; // fresh world per run
+  const registry = new BoneRegistry({ loopId: 'rite', riteWindow: 3 });
+  const purpose = new Purpose({
+    sentence: 'Demonstrate the rite: keep producing capsules while the registry polices its own bones.',
+    stop: () => false, unitsFor: () => 1, deadband: 0, loopId: 'rite',
+  });
+  const loop = new Loop({
+    loopId: 'rite', purpose, taskShape: TASK_SHAPE, budget: 400,
+    strategy: noteStrategy, strategyName: 'notes.v1', measure: measureCapsule,
+    extractors, bonesEnabled: true, remeasure, receiptPath, clock,
+  }).attachRegistry(registry);
 
-console.log('RITE EXAMPLE — a lut bone that stops paying rent (WP-07 retirement rite)');
-const runs = [];
-for (let i = 1; i <= 6; i++) {
-  if (i === 3) world.notesCarryTemplate = true; // the world changes before iteration 3
-  const r = loop.iterate({ topic: NOTE_TOPICS[(i - 1) % NOTE_TOPICS.length] });
-  runs.push(r);
-  const uses = r.measuredUses.map(u => `use lut: ${u.withoutOps} → ${u.withOps} ops (saved ${u.savedDelta})`);
-  console.log(`  it.${i}: ${r.ops} ops, valid ${r.payoff.valid}, injected ${r.injected.length}, ${uses.length ? uses.join('; ') : 'no measured uses'}`);
-}
-loop.close('rite demonstration complete: the lut was retired and the world runs without it');
-
-const receipts = new ReceiptLog({ path: ritePath });
-const all = receipts.all();
-const kinds = (k) => all.filter(r => r.kind === k);
-const lut = registry.get(kinds('bone.sweep')[0]?.payload.retired[0].id);
-
-console.log('\n  the rite trail (seq-chained receipts):');
-for (const r of all) {
-  if (!['compile.record', 'bone.use', 'bone.sweep', 'bone.retired', 'reshape'].includes(r.kind)) continue;
-  if (r.kind === 'compile.record') {
-    if (r.payload.minted.length) console.log(`    seq ${r.seq}  mint        : ${r.payload.minted.map(b => `${b.id} (saved ${b.costSaved ? b.costSaved.saved : 'n/a'})`).join(', ')}`);
-  } else if (r.kind === 'bone.use') {
-    console.log(`    seq ${r.seq}  bone.use    : ${r.payload.boneId} seq#${r.payload.seq} ${r.payload.withoutOps} → ${r.payload.withOps} (saved ${r.payload.savedDelta}, "${r.payload.note}")`);
-  } else if (r.kind === 'bone.sweep') {
-    console.log(`    seq ${r.seq}  bone.sweep  : iteration ${r.payload.iteration}, swept ${r.payload.swept}, retired ${r.payload.retired.map(b => b.id).join(', ')}`);
-  } else if (r.kind === 'bone.retired') {
-    console.log(`    seq ${r.seq}  bone.retired: ${r.payload.boneId} reason=${r.payload.reason} at=ledger#${r.payload.at} window=[${r.payload.window.map(e => `#${e.seq} ${e.withoutOps}/${e.withOps}`).join(', ')}]`);
-  } else if (r.kind === 'reshape' && r.payload.iteration >= 5) {
-    console.log(`    seq ${r.seq}  reshape     : iteration ${r.payload.iteration} injected [${r.payload.injected.map(id => id.split(':')[0]).join(', ')}]`);
+  const runs = [];
+  for (let i = 1; i <= 6; i++) {
+    if (i === 3) world.notesCarryTemplate = true; // the world changes before iteration 3
+    const r = loop.iterate({ topic: NOTE_TOPICS[(i - 1) % NOTE_TOPICS.length] });
+    runs.push(r);
   }
+  loop.close('rite demonstration complete: the lut was retired and the world runs without it');
+  const receipts = new ReceiptLog({ path: receiptPath });
+  return { registry, receipts, runs, all: receipts.all() };
 }
 
-console.log(`\n  the lut ledger (${lut.useHistory.length} entries, never deleted):`);
-for (const e of lut.useHistory) console.log(`    #${e.seq} ${e.note.padEnd(56)} without ${e.withoutOps}  with ${e.withOps}  saved ${e.savedDelta}`);
-console.log(`  rolling costSaved now: without ${lut.costSaved.withoutOps}, with ${lut.costSaved.withOps}, saved ${lut.costSaved.saved} (window ${lut.costSaved.window}, ${lut.costSaved.measuredAt})`);
-console.log(`  retired: ${JSON.stringify({ at: lut.retired.at, reason: lut.retired.reason })}`);
-const s = registry.stats();
-console.log(`  registry: ${s.count} bones, retiredCount ${s.retiredCount} (retired ≠ deleted: still in all()/stats)`);
-console.log(`  cost curve: ${runs.map(r => r.ops).join(' → ')} ops — it FALLS when the retired bone leaves the world: it had stopped paying rent`);
-const reSweep = registry.retireSweep();
-console.log(`  re-sweep is idempotent: retired ${reSweep.retired.length}`);
-console.log(`  receipts: ${ritePath} (chain verifies: ${receipts.verify().ok}, ${all.length} receipts)`);
+function main() {
+  console.log('RITE EXAMPLE — a lut bone that stops paying rent (WP-07 retirement rite)');
+  const { registry, receipts, runs, all } = runRiteDemo();
+  const kinds = (k) => all.filter(r => r.kind === k);
+  const lut = registry.get(kinds('bone.sweep')[0]?.payload.retired[0].id);
+
+  console.log('\n  the rite trail (seq-chained receipts):');
+  for (const r of all) {
+    if (!['compile.record', 'bone.use', 'bone.sweep', 'bone.retired', 'reshape'].includes(r.kind)) continue;
+    if (r.kind === 'compile.record') {
+      if (r.payload.minted.length) console.log(`    seq ${r.seq}  mint        : ${r.payload.minted.map(b => `${b.id} (saved ${b.costSaved ? b.costSaved.saved : 'n/a'})`).join(', ')}`);
+    } else if (r.kind === 'bone.use') {
+      console.log(`    seq ${r.seq}  bone.use    : ${r.payload.boneId} seq#${r.payload.seq} ${r.payload.withoutOps} → ${r.payload.withOps} (saved ${r.payload.savedDelta}, "${r.payload.note}")`);
+    } else if (r.kind === 'bone.sweep') {
+      console.log(`    seq ${r.seq}  bone.sweep  : iteration ${r.payload.iteration}, swept ${r.payload.swept}, retired ${r.payload.retired.map(b => b.id).join(', ')}`);
+    } else if (r.kind === 'bone.retired') {
+      console.log(`    seq ${r.seq}  bone.retired: ${r.payload.boneId} reason=${r.payload.reason} at=ledger#${r.payload.at} window=[${r.payload.window.map(e => `#${e.seq} ${e.withoutOps}/${e.withOps}`).join(', ')}]`);
+    } else if (r.kind === 'reshape' && r.payload.iteration >= 5) {
+      console.log(`    seq ${r.seq}  reshape     : iteration ${r.payload.iteration} injected [${r.payload.injected.map(id => id.split(':')[0]).join(', ')}]`);
+    }
+  }
+
+  console.log(`\n  the lut ledger (${lut.useHistory.length} entries, never deleted):`);
+  for (const e of lut.useHistory) console.log(`    #${e.seq} ${e.note.padEnd(56)} without ${e.withoutOps}  with ${e.withOps}  saved ${e.savedDelta}`);
+  console.log(`  rolling costSaved now: without ${lut.costSaved.withoutOps}, with ${lut.costSaved.withOps}, saved ${lut.costSaved.saved} (window ${lut.costSaved.window}, ${lut.costSaved.measuredAt})`);
+  console.log(`  retired: ${JSON.stringify({ at: lut.retired.at, reason: lut.retired.reason })}`);
+  const s = registry.stats();
+  console.log(`  registry: ${s.count} bones, retiredCount ${s.retiredCount} (retired ≠ deleted: still in all()/stats)`);
+  console.log(`  cost curve: ${runs.map(r => r.ops).join(' → ')} ops — it FALLS when the retired bone leaves the world: it had stopped paying rent`);
+  const reSweep = registry.retireSweep();
+  console.log(`  re-sweep is idempotent: retired ${reSweep.retired.length}`);
+  console.log(`  receipts: ${ritePath} (chain verifies: ${receipts.verify().ok}, ${all.length} receipts)`);
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) main();

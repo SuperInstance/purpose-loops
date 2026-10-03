@@ -193,3 +193,31 @@ test('rite: riteWindow boundary — exactly riteWindow-1 bad entries is NOT reti
   reg2.recordUse(b2.id, BAD_USE());
   assert.equal(reg2.retireSweep({ window: 2 }).retired.length, 1, 'window=2 override: two bad entries suffice');
 });
+
+// ── receipt-of-record pin (D1, verifier finding): the committed rite.jsonl
+// must regenerate from the committed tree. Two fixed-clock runs are
+// byte-identical; the committed file is payload-identical (ts/hash/prev bind
+// the clock, so byte-equality across clocks is not expected — payload
+// identity is the seal).
+test('rite receipt of record regenerates: fixed clock is byte-identical, committed file is payload-identical', async () => {
+  const { runRiteDemo } = await import('../demo/rite-example.mjs');
+  const os = await import('node:os');
+  const pathM = await import('node:path');
+  const dir = fs.mkdtempSync(pathM.join(os.tmpdir(), 'rite-pin-'));
+  const fixed = () => '2026-10-03T00:00:00.000Z';
+  const p1 = pathM.join(dir, 'a.jsonl');
+  const p2 = pathM.join(dir, 'b.jsonl');
+  runRiteDemo({ receiptPath: p1, clock: fixed });
+  runRiteDemo({ receiptPath: p2, clock: fixed });
+  assert.equal(
+    fs.readFileSync(p1, 'utf8'), fs.readFileSync(p2, 'utf8'),
+    'fixed clock: the rite demo is byte-identical across runs',
+  );
+  const strip = (p) => fs.readFileSync(p, 'utf8').trim().split('\n')
+    .map((l) => { const r = JSON.parse(l); return JSON.stringify({ seq: r.seq, kind: r.kind, payload: r.payload }); });
+  const committed = new URL('../demo/receipts/rite.jsonl', import.meta.url).pathname;
+  assert.deepEqual(
+    strip(p1), strip(committed),
+    'the committed rite.jsonl regenerates payload-for-payload from the committed tree (only ts/hash/prev may differ)',
+  );
+});

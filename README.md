@@ -127,12 +127,13 @@ node demo/rite-example.mjs      # the retirement rite, worked live (writes demo/
 node lib/control-ladder.mjs     # the negative control's rung must stay flat (exit 1 if it moves)
 node demo/llm-loop.mjs          # live 3-call LLM loop (keys never printed)
 node demo/embed.mjs             # rebuild the demo page from receipts
-npm test                        # 38/38 (vendor + rite + control + bones + loop + purpose)
+npm test                        # 39/39 (vendor + rite + control + bones + loop + purpose)
+node --test tests/*.test.mjs    # raw form; NOTE: directory form `node --test tests/` FAILS on node v24 (loads the dir as a CJS module) — use the glob or npm test
 ```
 
 ## Tests & CI
 
-`npm test` (38 tests) plus the standing control check
+`npm test` (39 tests) plus the standing control check
 `node lib/control-ladder.mjs demo/summary.json`: the negative control's rung
 must stay FLAT (99 → 99 → 99 ops) — if the control arm moves, bones leaked
 into it or the world drifted, and the tool exits 1 naming the iteration and
