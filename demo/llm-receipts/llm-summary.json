@@ -1,0 +1,48 @@
+{
+  "model": "Qwen/Qwen3-Next-80B-A3B-Instruct",
+  "available": true,
+  "iterations": [
+    {
+      "iteration": 1,
+      "topic": "black holes",
+      "promptChars": 679,
+      "completionChars": 790,
+      "cardsParsed": 5,
+      "valid": true,
+      "latencyMs": 2415,
+      "bonesInjected": []
+    },
+    {
+      "iteration": 2,
+      "topic": "plate tectonics",
+      "promptChars": 653,
+      "completionChars": 913,
+      "cardsParsed": 5,
+      "valid": true,
+      "latencyMs": 2956,
+      "bonesInjected": [
+        "lut(style)",
+        "preset(example cards)"
+      ]
+    },
+    {
+      "iteration": 3,
+      "topic": "the Moon",
+      "promptChars": 646,
+      "completionChars": 768,
+      "cardsParsed": 5,
+      "valid": true,
+      "latencyMs": 2627,
+      "bonesInjected": [
+        "lut(style)",
+        "preset(example cards)"
+      ]
+    }
+  ],
+  "curve": [
+    679,
+    653,
+    646
+  ],
+  "failure": null
+}

@@ -1,0 +1,16 @@
+{
+  "name": "purpose-loops",
+  "version": "0.1.0",
+  "description": "RSI for a purpose: loops whose unit of work is a LOOP, not a run — each iteration compiles what worked into BONES and reshapes the environment so the next same-shaped task is cheaper.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "demo": "node demo/worked-example.mjs",
+    "demo:html": "node demo/embed.mjs",
+    "demo:llm": "node demo/llm-loop.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}

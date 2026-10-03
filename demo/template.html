@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>purpose-loops — the jig law, visualized</title>
+<style>
+  :root {
+    --ink: #0d0f14; --panel: #12151d; --panel2: #151926; --line: #1e2433;
+    --mint: #7ee0c3; --amber: #f0b429; --dim: #8a93a6; --dimmer: #565f73;
+    --red: #e06a6a; --mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--ink); color: #cdd6e4; font-family: var(--mono); font-size: 13px; line-height: 1.55; padding: 28px 20px 60px; }
+  .wrap { max-width: 1060px; margin: 0 auto; }
+  h1 { color: var(--mint); font-size: 20px; letter-spacing: 3px; }
+  h1 .amber { color: var(--amber); }
+  .sub { color: var(--dim); margin-top: 6px; }
+  .law { border-left: 3px solid var(--amber); background: var(--panel); padding: 14px 16px; margin: 18px 0; color: #dfe7f3; }
+  .law b { color: var(--amber); }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px 18px; margin: 14px 0; }
+  .panel h2 { color: var(--mint); font-size: 12px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
+  .panel h2 .n { color: var(--dimmer); }
+  .banner { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; }
+  .sentence { font-size: 14px; color: #e8eef8; }
+  .sentence .q { color: var(--mint); }
+  .stopcond { color: var(--dim); font-size: 12px; margin-top: 6px; }
+  .led { padding: 4px 10px; border: 1px solid var(--mint); color: var(--mint); border-radius: 3px; font-size: 11px; letter-spacing: 1px; white-space: nowrap; }
+  .timeline { display: flex; gap: 10px; align-items: flex-end; margin-top: 8px; flex-wrap: wrap; }
+  .cell { background: var(--panel2); border: 1px solid var(--line); border-radius: 5px; padding: 12px 12px 10px; width: 150px; position: relative; }
+  .cell .iter { color: var(--dimmer); font-size: 10px; letter-spacing: 1px; }
+  .cell .topic { color: #e8eef8; font-size: 12px; margin: 2px 0 8px; min-height: 30px; }
+  .cell .ops { color: var(--mint); font-size: 24px; font-weight: bold; }
+  .cell .ops small { font-size: 10px; color: var(--dim); font-weight: normal; }
+  .bar-track { height: 90px; display: flex; align-items: flex-end; margin: 8px 0 6px; background: repeating-linear-gradient(to top, transparent 0 21px, var(--line) 21px 22px); }
+  .bar { width: 100%; background: linear-gradient(to top, #2b6f5d, var(--mint)); border-radius: 2px 2px 0 0; position: relative; }
+  .bar .delta { position: absolute; top: -18px; left: 0; right: 0; text-align: center; color: var(--amber); font-size: 10px; }
+  .cell .chips { display: flex; flex-wrap: wrap; gap: 4px; min-height: 18px; margin-top: 6px; }
+  .chip { font-size: 9px; padding: 1px 6px; border-radius: 8px; border: 1px solid var(--amber); color: var(--amber); }
+  .chip.mint { border-color: var(--mint); color: var(--mint); }
+  .cell.ghost, .ghosted { opacity: 0.45; }
+  .cell.paused { border-style: dashed; border-color: var(--amber); }
+  .cell.paused .ops { color: var(--amber); font-size: 16px; }
+  .pausewhy { color: var(--dim); font-size: 11px; margin-top: 10px; }
+  .pausewhy b { color: var(--amber); }
+  .vs { color: var(--dimmer); align-self: center; font-size: 11px; width: auto; padding: 0 4px; }
+  table { border-collapse: collapse; width: 100%; font-size: 12px; }
+  th { color: var(--dim); text-align: left; font-weight: normal; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; padding: 4px 8px; border-bottom: 1px solid var(--line); }
+  td { padding: 5px 8px; border-bottom: 1px solid #171b26; vertical-align: top; }
+  td.num { text-align: right; color: var(--mint); }
+  td.zero { color: var(--dimmer); }
+  .kind { display: inline-block; font-size: 10px; padding: 1px 7px; border-radius: 3px; letter-spacing: 1px; }
+  .kind.lexicon { background: #123a31; color: var(--mint); }
+  .kind.lut { background: #3a2f10; color: var(--amber); }
+  .kind.preset { background: #16304a; color: #7ec3e0; }
+  .kind.validator { background: #331224; color: #e07ec0; }
+  .savedbar { display: inline-block; height: 8px; background: var(--amber); border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } }
+  .receipts { display: flex; gap: 6px; overflow-x: auto; padding: 10px 2px; }
+  .rc { flex: 0 0 auto; background: var(--panel2); border: 1px solid var(--line); border-left: 3px solid var(--dimmer); border-radius: 3px; padding: 5px 9px; font-size: 10px; max-width: 260px; }
+  .rc .seq { color: var(--dimmer); }
+  .rc .kindr { color: var(--mint); }
+  .rc .gist { color: var(--dim); white-space: normal; }
+  .rc.attempt-record { border-left-color: var(--mint); }
+  .rc.compile-record { border-left-color: var(--amber); }
+  .rc.purpose-pause { border-left-color: var(--red); }
+  .rc.purpose-cite { border-left-color: var(--mint); }
+  .rc.reshape { border-left-color: #7ec3e0; }
+  .rc.llm-attempt { border-left-color: var(--amber); }
+  .rc.llm-failure { border-left-color: var(--red); }
+  .footnote { color: var(--dimmer); font-size: 11px; margin-top: 8px; }
+  .llmfail { color: var(--amber); }
+  .opslabels { color: var(--dim); font-size: 10px; margin-top: 6px; line-height: 1.7; }
+  .opslabels b { color: #aeb9cc; font-weight: normal; }
+  .gone { color: var(--amber); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>PURPOSE <span class="amber">LOOPS</span></h1>
+  <div class="sub">the unit of work is a LOOP, not a run · RSI for a purpose · receipts below are real data from <span class="mint">node demo/worked-example.mjs</span></div>
+
+  <div class="law"><b>THE JIG LAW.</b> We are not saving the decision tree. We are shaping the environment that cultivated the decision — so the next time the same-shaped problem appears, the world already contains the bones of the solution, and the attempt is cheaper before any thought begins.</div>
+
+  <div class="panel">
+    <div class="banner">
+      <div>
+        <div class="sentence"><span class="q">purpose ▸ </span><span id="purpose-sentence"></span></div>
+        <div class="stopcond" id="purpose-stop"></div>
+      </div>
+      <div class="led" id="purpose-status"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>the loop — iteration timeline <span class="n">(cost = labeled task operations, honestly counted)</span></h2>
+    <div class="timeline" id="timeline"></div>
+    <div class="pausewhy" id="pausewhy"></div>
+    <div class="footnote">minted chips = bones compiled from THAT iteration's receipts and loaded into the NEXT world. Δ = ops vs previous iteration.</div>
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <h2>bone registry <span class="n">(grows, then saturates)</span></h2>
+      <table id="bonestable"></table>
+      <div class="footnote">costSaved is an EXECUTED counterfactual: the same subtask run with and without the bone on fresh op counters at mint time. Not an estimate.</div>
+    </div>
+    <div class="panel ghosted">
+      <h2>negative control — bones disabled <span class="n">(same code, same topics)</span></h2>
+      <div class="timeline" id="control-timeline"></div>
+      <div class="footnote" id="control-note"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>where the cost went <span class="n">(op labels × iterations, main loop)</span></h2>
+    <table id="opstable"></table>
+    <div class="footnote"><span class="gone">amber 0</span> = work the bones made unnecessary. The scan died with the lexicon; the hand-fitting died with the LUT; the scoring died with the preset; the linear dedupe died with the frozen term set.</div>
+  </div>
+
+  <div class="panel">
+    <h2>live LLM attempt loop <span class="n">(groq · llama-3.1-8b · bones = style LUT + example card)</span></h2>
+    <div id="llm-panel"></div>
+  </div>
+
+  <div class="panel">
+    <h2>receipts <span class="n">(hash-chained JSONL · append-only · tamper-evident)</span></h2>
+    <div class="receipts" id="receipts"></div>
+    <div class="footnote" id="chaintip"></div>
+  </div>
+
+  <div class="footnote">purpose-loops · a SuperInstance fleet instrument · dark quilt · no network, no CDN — this file carries its own data</div>
+</div>
+
+<script id="embedded-data">
+window.__DATA__ = /*__DATA_JSON__*/;
+</script>
+<script>
+(function render() {
+  const D = window.__DATA__;
+  const el = (t, cls, html) => { const e = document.createElement(t); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  // purpose banner
+  document.getElementById('purpose-sentence').textContent = D.purpose.sentence;
+  document.getElementById('purpose-stop').textContent = 'stop condition: ' + D.purpose.stop + '  ·  deadband: ' + D.purpose.deadband + ' purpose/op — below it, no surprise, no spend';
+  const led = document.getElementById('purpose-status');
+  led.textContent = D.main.gate ? 'STOPPED · GATE REFUSED ITERATION ' + D.main.gate.iteration : 'COMPLETE';
+
+  // main timeline
+  const maxOps = Math.max(...D.main.curve, ...D.control.curve);
+  const tl = document.getElementById('timeline');
+  D.main.iterations.forEach((it, idx) => {
+    const c = el('div', 'cell');
+    const prev = idx > 0 ? D.main.iterations[idx - 1].ops : null;
+    const delta = prev ? Math.round(100 * (it.ops - prev) / prev) : null;
+    c.appendChild(el('div', 'iter', 'iteration ' + it.iteration + ' · ' + it.injected.length + ' bones in world'));
+    c.appendChild(el('div', 'topic', esc(it.topic)));
+    c.appendChild(el('div', 'ops', it.ops + ' <small>ops</small>'));
+    const track = el('div', 'bar-track');
+    const bar = el('div', 'bar');
+    bar.style.height = Math.round(100 * it.ops / maxOps) + '%';
+    if (delta !== null) bar.appendChild(el('div', 'delta', 'Δ ' + delta + '%'));
+    track.appendChild(bar);
+    c.appendChild(track);
+    const chips = el('div', 'chips');
+    it.minted.forEach(b => chips.appendChild(el('span', 'chip', b.kind + ' ▸')));
+    it.reused.forEach(id => chips.appendChild(el('span', 'chip mint', id.split(':')[0] + ' ↻')));
+    c.appendChild(chips);
+    tl.appendChild(c);
+  });
+  // the refused iteration, ghosted amber
+  if (D.main.gate) {
+    const c = el('div', 'cell paused');
+    c.appendChild(el('div', 'iter', 'iteration ' + D.main.gate.iteration));
+    c.appendChild(el('div', 'topic', esc(D.main.gate.topic || 'repeat task')));
+    c.appendChild(el('div', 'ops', 'PAUSED <small>0 ops</small>'));
+    c.appendChild(el('div', 'opslabels', 'gate refused spend:<br>marginal 0 &lt; deadband'));
+    tl.appendChild(c);
+  }
+  const why = document.getElementById('pausewhy');
+  if (D.main.gate) why.innerHTML = '<b>gate ▸</b> ' + esc(D.main.gate.why);
+
+  // control timeline
+  const ctl = document.getElementById('control-timeline');
+  D.control.iterations.forEach((it) => {
+    const c = el('div', 'cell ghost');
+    c.appendChild(el('div', 'iter', 'iteration ' + it.iteration + ' · 0 bones in world'));
+    c.appendChild(el('div', 'topic', esc(it.topic)));
+    c.appendChild(el('div', 'ops', it.ops + ' <small>ops</small>'));
+    const track = el('div', 'bar-track');
+    const bar = el('div', 'bar');
+    bar.style.height = Math.round(100 * it.ops / maxOps) + '%';
+    bar.style.background = 'linear-gradient(to top, #444, #777)';
+    track.appendChild(bar);
+    c.appendChild(track);
+    ctl.appendChild(c);
+  });
+  document.getElementById('control-note').textContent = D.control.note + ' — minted ' + D.control.registry.count + ' bones, loaded 0, saved 0. The curve is flat because the world never changed.';
+
+  // bones table
+  const bt = document.getElementById('bonestable');
+  const maxSaved = Math.max(...D.bones.map(b => (b.costSaved ? b.costSaved.saved : 0)), 1);
+  D.bones.forEach(b => {
+    const tr = el('tr');
+    const saved = b.costSaved ? b.costSaved.saved : 0;
+    tr.innerHTML = '<td><span class="kind ' + b.kind + '">' + b.kind + '</span><br><span style="color:var(--dimmer)">' + esc(b.id) + '</span></td>' +
+      '<td class="num"><span class="savedbar" style="width:' + Math.round(60 * saved / maxSaved) + 'px"></span>−' + saved + ' ops' +
+      '<br><span style="color:var(--dim)">' + (b.costSaved ? b.costSaved.withoutOps + ' → ' + b.costSaved.withOps : '') + '</span></td>' +
+      '<td class="num">' + b.reuseCount + '×</td>' +
+      '<td style="color:var(--dimmer)">' + esc(b.provenance.join(' ')) + '</td>';
+    bt.appendChild(tr);
+  });
+
+  // ops breakdown table
+  const labels = [...new Set(D.main.iterations.flatMap(it => Object.keys(it.opsByLabel)))];
+  const labelTotals = labels.map(l => D.main.iterations.reduce((a, it) => a + (it.opsByLabel[l] || 0), 0));
+  const order = labels.map((l, i) => i).sort((a, b) => labelTotals[b] - labelTotals[a]);
+  const ot = document.getElementById('opstable');
+  const head = el('tr');
+  head.innerHTML = '<th>op label</th>' + D.main.iterations.map(it => '<th style="text-align:right">iter ' + it.iteration + '</th>').join('');
+  ot.appendChild(head);
+  order.forEach(li => {
+    const l = labels[li];
+    const tr = el('tr');
+    tr.innerHTML = '<td>' + esc(l) + '</td>' + D.main.iterations.map(it => {
+      const v = it.opsByLabel[l] || 0;
+      return '<td class="num' + (v === 0 && labelTotals[li] > 0 ? ' zero gone' : '') + '">' + (v || (labelTotals[li] > 0 ? '0' : '·')) + '</td>';
+    }).join('');
+    ot.appendChild(tr);
+  });
+  const tot = el('tr');
+  tot.innerHTML = '<td><b>total ops</b></td>' + D.main.iterations.map(it => '<td class="num"><b>' + it.ops + '</b></td>').join('');
+  ot.appendChild(tot);
+
+  // llm panel
+  const lp = document.getElementById('llm-panel');
+  if (D.llm && D.llm.iterations && D.llm.iterations.length > 1) {
+    const row = el('div', 'timeline');
+    D.llm.iterations.forEach((it, i) => {
+      const c = el('div', 'cell');
+      c.appendChild(el('div', 'iter', 'call ' + it.iteration + ' · ' + esc(it.topic)));
+      c.appendChild(el('div', 'ops', it.promptChars + ' <small>chars</small>'));
+      const track = el('div', 'bar-track');
+      const bar = el('div', 'bar');
+      bar.style.height = Math.round(100 * it.promptChars / Math.max(...D.llm.curve)) + '%';
+      track.appendChild(bar);
+      c.appendChild(track);
+      c.appendChild(el('div', 'opslabels', (i === 0 ? 'baseline rules prompt' : 'bones injected: ' + esc(it.bonesInjected.join(' + '))) + '<br>' + (it.valid ? '5 valid cards' : 'invalid') + ' · ' + it.latencyMs + 'ms'));
+      row.appendChild(c);
+    });
+    lp.appendChild(row);
+  } else {
+    const msg = (D.llm && (D.llm.failure || 'no data')) ;
+    lp.innerHTML = '<div class="llmfail">honest failure ▸ </div><div class="footnote">' + esc(msg || '') +
+      '<br>the key was present on disk but rejected server-side (403 on completions AND on /models — revoked or account-blocked). 2 of 3 call budget spent. Receipted, skipped: the offline curve above already carries the thesis. The mechanism this demo would have shown: iteration 1 pays a full rules paragraph (~800 chars); iterations 2–3 pay only a style LUT + one example card (~400 chars) — prompt chars as the cost curve.</div>';
+  }
+
+  // receipts strip
+  const rs = document.getElementById('receipts');
+  D.receipts.forEach(r => {
+    const d = el('div', 'rc ' + String(r.kind).replace(/\./g, '-'));
+    d.innerHTML = '<span class="seq">' + r.loop + ':' + r.seq + '</span> <span class="kindr">' + esc(r.kind) + '</span><div class="gist">' + esc(r.gist) + '</div>';
+    rs.appendChild(d);
+  });
+  document.getElementById('chaintip').textContent = 'main tip ' + D.main.tip + ' · control tip ' + D.control.tip + ' · every receipt seals sha256(seq|prev|kind|ts|payload)';
+})();
+</script>
+</body>
+</html>

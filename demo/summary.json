@@ -1,0 +1,542 @@
+{
+  "generated": "2026-10-03T07:41:51.993Z",
+  "purpose": "Cultivate a capsule factory: every same-shaped capsule after the first must cost fewer operations than the last, funded only by bones the loop itself mints and loads.",
+  "deadband": 0.005,
+  "main": {
+    "loopId": "main",
+    "iterations": [
+      {
+        "iteration": 1,
+        "topic": "photosynthesis",
+        "ops": 99,
+        "opsByLabel": {
+          "compose.card": 7,
+          "corpus.scan": 28,
+          "dedupe.compare": 21,
+          "score.card": 7,
+          "select.top": 1,
+          "template.try": 21,
+          "validate.answer": 7,
+          "validate.shape": 7
+        },
+        "injected": [],
+        "minted": [
+          {
+            "id": "lexicon:73e30003039702e4",
+            "kind": "lexicon",
+            "costSaved": {
+              "withoutOps": 28,
+              "withOps": 8,
+              "saved": 20,
+              "withoutByLabel": {
+                "corpus.scan": 28
+              },
+              "withByLabel": {
+                "index.row": 7,
+                "lexicon.lookup": 1
+              }
+            }
+          },
+          {
+            "id": "lut:f6d49d4675ff142f",
+            "kind": "lut",
+            "costSaved": {
+              "withoutOps": 15,
+              "withOps": 5,
+              "saved": 10,
+              "withoutByLabel": {
+                "template.try": 15
+              },
+              "withByLabel": {
+                "lut.dispatch": 5
+              }
+            }
+          }
+        ],
+        "reused": [],
+        "valid": true,
+        "cite": "iteration 1: produced a 5-card capsule on \"photosynthesis\" (first observation); 0 bone(s) were in the world — units 1.000 (coverage 1.0 + improvement 0.000), marginal 0.0101 purpose/op; serves: \"Cultivate a capsule factory: every same-shaped capsule after the first must cost fewer operations than the last, funded only by bones the loop itself mints and loads.\""
+      },
+      {
+        "iteration": 2,
+        "topic": "plate-tectonics",
+        "ops": 67,
+        "opsByLabel": {
+          "bone.fetch": 2,
+          "compose.card": 7,
+          "dedupe.compare": 21,
+          "index.row": 7,
+          "lexicon.lookup": 1,
+          "lut.dispatch": 7,
+          "score.card": 7,
+          "select.top": 1,
+          "validate.answer": 7,
+          "validate.shape": 7
+        },
+        "injected": [
+          "lexicon:73e30003039702e4",
+          "lut:f6d49d4675ff142f"
+        ],
+        "minted": [
+          {
+            "id": "validator:a6ee1f505bde24ff",
+            "kind": "validator",
+            "costSaved": {
+              "withoutOps": 14,
+              "withOps": 7,
+              "saved": 7,
+              "withoutByLabel": {
+                "validate.answer": 7,
+                "validate.shape": 7
+              },
+              "withByLabel": {
+                "validator.conformance": 7
+              }
+            }
+          },
+          {
+            "id": "preset:4177c761deba8ff7",
+            "kind": "preset",
+            "costSaved": {
+              "withoutOps": 29,
+              "withOps": 15,
+              "saved": 14,
+              "withoutByLabel": {
+                "compose.card": 7,
+                "score.card": 7,
+                "select.top": 1,
+                "validate.answer": 7,
+                "validate.shape": 7
+              },
+              "withByLabel": {
+                "compose.card": 5,
+                "skeleton.select": 5,
+                "validator.conformance": 5
+              }
+            }
+          },
+          {
+            "id": "validator:b74c3591bab59b2d",
+            "kind": "validator",
+            "costSaved": {
+              "withoutOps": 21,
+              "withOps": 7,
+              "saved": 14,
+              "withoutByLabel": {
+                "dedupe.compare": 21
+              },
+              "withByLabel": {
+                "validator.termset": 7
+              }
+            }
+          }
+        ],
+        "reused": [],
+        "valid": true,
+        "cite": "iteration 2: produced a 5-card capsule on \"plate-tectonics\" (99 → 67 ops); 2 bone(s) were in the world — units 1.323 (coverage 1.0 + improvement 0.323), marginal 0.0197 purpose/op; serves: \"Cultivate a capsule factory: every same-shaped capsule after the first must cost fewer operations than the last, funded only by bones the loop itself mints and loads.\""
+      },
+      {
+        "iteration": 3,
+        "topic": "the-moon",
+        "ops": 38,
+        "opsByLabel": {
+          "bone.fetch": 5,
+          "compose.card": 5,
+          "index.row": 7,
+          "lexicon.lookup": 1,
+          "lut.dispatch": 5,
+          "skeleton.select": 5,
+          "validator.conformance": 5,
+          "validator.termset": 5
+        },
+        "injected": [
+          "lexicon:73e30003039702e4",
+          "lut:f6d49d4675ff142f",
+          "validator:a6ee1f505bde24ff",
+          "preset:4177c761deba8ff7",
+          "validator:b74c3591bab59b2d"
+        ],
+        "minted": [],
+        "reused": [
+          "validator:a6ee1f505bde24ff",
+          "preset:4177c761deba8ff7"
+        ],
+        "valid": true,
+        "cite": "iteration 3: produced a 5-card capsule on \"the-moon\" (67 → 38 ops); 5 bone(s) were in the world — units 1.433 (coverage 1.0 + improvement 0.433), marginal 0.0377 purpose/op; serves: \"Cultivate a capsule factory: every same-shaped capsule after the first must cost fewer operations than the last, funded only by bones the loop itself mints and loads.\""
+      }
+    ],
+    "curve": [
+      99,
+      67,
+      38
+    ],
+    "gate": {
+      "iteration": 4,
+      "why": "stop condition already met: completed=3, curve=[99 → 67 → 38] — predicted units for this iteration is 0 and the curve is receipted; marginal purpose-per-op 0.0000 would spend ops on nothing new. No surprise, no spend.",
+      "opsSpent": 0
+    },
+    "registry": {
+      "count": 5,
+      "byKind": {
+        "lexicon": 1,
+        "lut": 1,
+        "validator": 2,
+        "preset": 1
+      },
+      "totalCostSaved": 65
+    }
+  },
+  "control": {
+    "loopId": "control",
+    "iterations": [
+      {
+        "iteration": 1,
+        "topic": "photosynthesis",
+        "ops": 99,
+        "opsByLabel": {
+          "compose.card": 7,
+          "corpus.scan": 28,
+          "dedupe.compare": 21,
+          "score.card": 7,
+          "select.top": 1,
+          "template.try": 21,
+          "validate.answer": 7,
+          "validate.shape": 7
+        },
+        "injected": [],
+        "minted": [
+          {
+            "id": "lexicon:73e30003039702e4",
+            "kind": "lexicon",
+            "costSaved": {
+              "withoutOps": 28,
+              "withOps": 8,
+              "saved": 20,
+              "withoutByLabel": {
+                "corpus.scan": 28
+              },
+              "withByLabel": {
+                "index.row": 7,
+                "lexicon.lookup": 1
+              }
+            }
+          },
+          {
+            "id": "lut:f6d49d4675ff142f",
+            "kind": "lut",
+            "costSaved": {
+              "withoutOps": 15,
+              "withOps": 5,
+              "saved": 10,
+              "withoutByLabel": {
+                "template.try": 15
+              },
+              "withByLabel": {
+                "lut.dispatch": 5
+              }
+            }
+          }
+        ],
+        "reused": [],
+        "valid": true,
+        "cite": "iteration 1: produced a 5-card capsule on \"photosynthesis\" (first observation); 0 bone(s) were in the world — units 1.000 (coverage 1.0 + improvement 0.000), marginal 0.0101 purpose/op; serves: \"Cultivate a capsule factory: every same-shaped capsule after the first must cost fewer operations than the last, funded only by bones the loop itself mints and loads.\""
+      },
+      {
+        "iteration": 2,
+        "topic": "plate-tectonics",
+        "ops": 99,
+        "opsByLabel": {
+          "compose.card": 7,
+          "corpus.scan": 28,
+          "dedupe.compare": 21,
+          "score.card": 7,
+          "select.top": 1,
+          "template.try": 21,
+          "validate.answer": 7,
+          "validate.shape": 7
+        },
+        "injected": [],
+        "minted": [
+          {
+            "id": "validator:a6ee1f505bde24ff",
+            "kind": "validator",
+            "costSaved": {
+              "withoutOps": 14,
+              "withOps": 7,
+              "saved": 7,
+              "withoutByLabel": {
+                "validate.answer": 7,
+                "validate.shape": 7
+              },
+              "withByLabel": {
+                "validator.conformance": 7
+              }
+            }
+          },
+          {
+            "id": "preset:4177c761deba8ff7",
+            "kind": "preset",
+            "costSaved": {
+              "withoutOps": 29,
+              "withOps": 15,
+              "saved": 14,
+              "withoutByLabel": {
+                "compose.card": 7,
+                "score.card": 7,
+                "select.top": 1,
+                "validate.answer": 7,
+                "validate.shape": 7
+              },
+              "withByLabel": {
+                "compose.card": 5,
+                "skeleton.select": 5,
+                "validator.conformance": 5
+              }
+            }
+          },
+          {
+            "id": "validator:b74c3591bab59b2d",
+            "kind": "validator",
+            "costSaved": {
+              "withoutOps": 21,
+              "withOps": 7,
+              "saved": 14,
+              "withoutByLabel": {
+                "dedupe.compare": 21
+              },
+              "withByLabel": {
+                "validator.termset": 7
+              }
+            }
+          }
+        ],
+        "reused": [
+          "lexicon:73e30003039702e4",
+          "lut:f6d49d4675ff142f"
+        ],
+        "valid": true,
+        "cite": "iteration 2: produced a 5-card capsule on \"plate-tectonics\" (99 → 99 ops); 0 bone(s) were in the world — units 1.000 (coverage 1.0 + improvement 0.000), marginal 0.0101 purpose/op; serves: \"Cultivate a capsule factory: every same-shaped capsule after the first must cost fewer operations than the last, funded only by bones the loop itself mints and loads.\""
+      },
+      {
+        "iteration": 3,
+        "topic": "the-moon",
+        "ops": 99,
+        "opsByLabel": {
+          "compose.card": 7,
+          "corpus.scan": 28,
+          "dedupe.compare": 21,
+          "score.card": 7,
+          "select.top": 1,
+          "template.try": 21,
+          "validate.answer": 7,
+          "validate.shape": 7
+        },
+        "injected": [],
+        "minted": [],
+        "reused": [
+          "lexicon:73e30003039702e4",
+          "lut:f6d49d4675ff142f",
+          "validator:a6ee1f505bde24ff",
+          "preset:4177c761deba8ff7"
+        ],
+        "valid": true,
+        "cite": "iteration 3: produced a 5-card capsule on \"the-moon\" (99 → 99 ops); 0 bone(s) were in the world — units 1.000 (coverage 1.0 + improvement 0.000), marginal 0.0101 purpose/op; serves: \"Cultivate a capsule factory: every same-shaped capsule after the first must cost fewer operations than the last, funded only by bones the loop itself mints and loads.\""
+      }
+    ],
+    "curve": [
+      99,
+      99,
+      99
+    ],
+    "registry": {
+      "count": 5,
+      "byKind": {
+        "lexicon": 1,
+        "lut": 1,
+        "validator": 2,
+        "preset": 1
+      },
+      "totalCostSaved": 65
+    },
+    "note": "bones minted but never injected: the environment was never reshaped"
+  },
+  "bones": [
+    {
+      "id": "lexicon:73e30003039702e4",
+      "kind": "lexicon",
+      "shape": "flashcard-capsule",
+      "reuseCount": 2,
+      "provenance": [
+        "main:5"
+      ],
+      "costSaved": {
+        "withoutOps": 28,
+        "withOps": 8,
+        "saved": 20,
+        "withoutByLabel": {
+          "corpus.scan": 28
+        },
+        "withByLabel": {
+          "index.row": 7,
+          "lexicon.lookup": 1
+        }
+      },
+      "body": {
+        "index": {
+          "photosynthesis": [
+            "f01",
+            "f02",
+            "f03",
+            "f04",
+            "f05",
+            "f06",
+            "f07"
+          ],
+          "plate-tectonics": [
+            "f08",
+            "f09",
+            "f10",
+            "f11",
+            "f12",
+            "f13",
+            "f14"
+          ],
+          "the-moon": [
+            "f15",
+            "f16",
+            "f17",
+            "f18",
+            "f19",
+            "f20",
+            "f21"
+          ],
+          "black-holes": [
+            "f22",
+            "f23",
+            "f24",
+            "f25",
+            "f26",
+            "f27",
+            "f28"
+          ]
+        }
+      }
+    },
+    {
+      "id": "lut:f6d49d4675ff142f",
+      "kind": "lut",
+      "shape": "flashcard-capsule",
+      "reuseCount": 2,
+      "provenance": [
+        "main:5"
+      ],
+      "costSaved": {
+        "withoutOps": 15,
+        "withOps": 5,
+        "saved": 10,
+        "withoutByLabel": {
+          "template.try": 15
+        },
+        "withByLabel": {
+          "lut.dispatch": 5
+        }
+      },
+      "body": {
+        "shapeToTemplate": {
+          "definition": "definition",
+          "process": "process",
+          "quantity": "quantity",
+          "location": "location",
+          "example": "example"
+        }
+      }
+    },
+    {
+      "id": "validator:a6ee1f505bde24ff",
+      "kind": "validator",
+      "shape": "flashcard-capsule",
+      "reuseCount": 1,
+      "provenance": [
+        "main:11",
+        "main:17"
+      ],
+      "costSaved": {
+        "withoutOps": 14,
+        "withOps": 7,
+        "saved": 7,
+        "withoutByLabel": {
+          "validate.answer": 7,
+          "validate.shape": 7
+        },
+        "withByLabel": {
+          "validator.conformance": 7
+        }
+      },
+      "body": {
+        "checks": [
+          "shape-known",
+          "answer-embeds-term"
+        ]
+      }
+    },
+    {
+      "id": "preset:4177c761deba8ff7",
+      "kind": "preset",
+      "shape": "flashcard-capsule",
+      "reuseCount": 1,
+      "provenance": [
+        "main:11",
+        "main:17"
+      ],
+      "costSaved": {
+        "withoutOps": 29,
+        "withOps": 15,
+        "saved": 14,
+        "withoutByLabel": {
+          "compose.card": 7,
+          "score.card": 7,
+          "select.top": 1,
+          "validate.answer": 7,
+          "validate.shape": 7
+        },
+        "withByLabel": {
+          "compose.card": 5,
+          "skeleton.select": 5,
+          "validator.conformance": 5
+        }
+      },
+      "body": {
+        "skeleton": [
+          "definition",
+          "definition",
+          "process",
+          "quantity",
+          "location"
+        ]
+      }
+    },
+    {
+      "id": "validator:b74c3591bab59b2d",
+      "kind": "validator",
+      "shape": "flashcard-capsule",
+      "reuseCount": 1,
+      "provenance": [
+        "main:11"
+      ],
+      "costSaved": {
+        "withoutOps": 21,
+        "withOps": 7,
+        "saved": 14,
+        "withoutByLabel": {
+          "dedupe.compare": 21
+        },
+        "withByLabel": {
+          "validator.termset": 7
+        }
+      },
+      "body": {
+        "termSetCount": 7
+      }
+    }
+  ]
+}
